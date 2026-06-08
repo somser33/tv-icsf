@@ -1,0 +1,6 @@
+{
+  "name": "Tv ICSF",
+  "description": "Premium Cyber-Security/Tech themed live TV streaming platform with automated sorting, dynamic filtering, favorite systems, and custom HLS advanced player engine.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
