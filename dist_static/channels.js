@@ -1,4 +1,5 @@
-[
+// Channels Data for ICSF TV Portal
+const INITIAL_CHANNELS = [
   {
     "name": "18",
     "logo": "http://103.175.242.10/assets/images/Sports%20181731138453.png",
@@ -3548,4 +3549,4 @@
     "url": "https://sonyliv.dinesh29.com.np/live/sonyliv-universal/sony-marathi/index.ts",
     "id": "sony-marathi-1"
   }
-]
+];

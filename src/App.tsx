@@ -2,10 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Search,
   Tv,
-  X,
-  Settings,
-  ShieldCheck,
-  Check
+  X
 } from "lucide-react";
 import CyberPlayer from "./components/CyberPlayer";
 import { INITIAL_CHANNELS, Channel } from "./channelsData";
@@ -75,25 +72,8 @@ function ChannelLogo({ channel, isSelected }: { channel: Channel; isSelected: bo
 }
 
 export default function App() {
-  const [aynaU, setAynaU] = useState(() => localStorage.getItem("ayna_u") || "78be6644-0a65-48ec-81a4-089ac65a2619");
-  const [aynaE, setAynaE] = useState(() => localStorage.getItem("ayna_e") || "1779283759");
-  const [isSettingOpen, setIsSettingOpen] = useState(false);
-  const [tempU, setTempU] = useState(aynaU);
-  const [tempE, setTempE] = useState(aynaE);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-
-  const handleSaveSettings = (e: React.FormEvent) => {
-    e.preventDefault();
-    localStorage.setItem("ayna_u", tempU.trim());
-    localStorage.setItem("ayna_e", tempE.trim());
-    setAynaU(tempU.trim());
-    setAynaE(tempE.trim());
-    setSaveSuccess(true);
-    setTimeout(() => {
-      setSaveSuccess(false);
-      setIsSettingOpen(false);
-    }, 1200);
-  };
+  const aynaU = "78be6644-0a65-48ec-81a4-089ac65a2619";
+  const aynaE = "1779283759";
 
   const [channelStatus, setChannelStatus] = useState<Record<string, "works" | "fails">>(() => {
     try {
@@ -183,14 +163,12 @@ export default function App() {
       let matchesCategory = false;
       if (selectedCategory === "All") {
         matchesCategory = true;
-      } else if (selectedCategory === "Active") {
-        matchesCategory = channelStatus[ch.id] === "works";
       } else {
         matchesCategory = ch.category === selectedCategory;
       }
       return matchesSearch && matchesCategory;
     });
-  }, [searchQuery, selectedCategory, sortedChannels, channelStatus]);
+  }, [searchQuery, selectedCategory, sortedChannels]);
 
   // Handle pagination list segmenting
   const displayedChannels = useMemo(() => {
@@ -302,40 +280,24 @@ export default function App() {
             </div>
           </div>
 
-          {/* Minimalist Search box & Settings Button */}
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <div className="relative w-full sm:w-64 flex-1">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="চ্যানেলের নাম খুঁজুন..."
-                className="w-full bg-zinc-950 border border-white/10 focus:border-white/20 rounded-xl py-1.5 pl-8 pr-10 text-xs text-white focus:outline-none transition-all placeholder-zinc-600"
-              />
-              <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-zinc-600 pointer-events-none" />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-2.5 top-2.5 text-zinc-500 hover:text-white transition"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-            <button
-              onClick={() => {
-                setTempU(aynaU);
-                setTempE(aynaE);
-                setIsSettingOpen(true);
-              }}
-              className="p-2.5 rounded-xl border border-white/10 hover:border-white/20 hover:bg-white/5 text-zinc-400 hover:text-white transition-all cursor-pointer flex items-center justify-center relative group"
-              title="টোকেন সেটিংস"
-            >
-              <Settings className="w-4 h-4" />
-              <span className="absolute -bottom-8 right-0 bg-zinc-900 border border-white/10 text-[9px] text-zinc-300 px-1.5 py-0.5 rounded shadow pointer-events-none opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-50">
-                টোকেন সেটিংস
-              </span>
-            </button>
+          {/* Minimalist Search box */}
+          <div className="relative w-full sm:w-64">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="চ্যানেলের নাম খুঁজুন..."
+              className="w-full bg-zinc-950 border border-white/10 focus:border-white/20 rounded-xl py-1.5 pl-8 pr-10 text-xs text-white focus:outline-none transition-all placeholder-zinc-600"
+            />
+            <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-zinc-600 pointer-events-none" />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-2.5 text-zinc-500 hover:text-white transition"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </header>
 
@@ -370,7 +332,6 @@ export default function App() {
               <div className="flex items-center flex-wrap gap-1.5 overflow-x-auto text-xs max-w-full">
                 {[
                   { id: "All", label: "সব চ্যানেল" },
-                  { id: "Active", label: "এক্টিভ চ্যানেল" },
                   { id: "Entertainment", label: "বিনোদন" },
                   { id: "Sports", label: "খেলাধুলা" },
                   { id: "News", label: "খবর" },
@@ -488,93 +449,6 @@ export default function App() {
         </footer>
 
       </div>
-
-      {/* ========================================================= */}
-      {/* SETTINGS DIALOG MODAL                                    */}
-      {/* ========================================================= */}
-      {isSettingOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-zinc-950 border border-white/10 rounded-2xl max-w-sm w-full p-6 shadow-2xl relative space-y-4">
-            <button 
-              onClick={() => setIsSettingOpen(false)}
-              className="absolute top-4 right-4 text-zinc-500 hover:text-white transition cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            <div className="space-y-1">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <Settings className="w-4 h-4 text-white" />
-                টোকেন সেটিংস
-              </h3>
-              <p className="text-[10px] text-zinc-500 leading-relaxed">
-                টোকেন আইপিটিভি চ্যানেলের অ্যাক্টিভেশন কী কনফিগার করুন
-              </p>
-            </div>
-            
-            <form onSubmit={handleSaveSettings} className="space-y-4">
-              <div className="space-y-3.5">
-                <div>
-                  <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5">
-                    ব্যবহারকারী আইডি (User ID - u)
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={tempU}
-                    onChange={(e) => setTempU(e.target.value)}
-                    placeholder="u= parameter..."
-                    className="w-full bg-black border border-white/5 focus:border-white/15 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white/10 transition-all font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5">
-                    মেয়াদোত্তীর্ণের তারিখ (Expiration - e)
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={tempE}
-                    onChange={(e) => setTempE(e.target.value)}
-                    placeholder="e= parameter..."
-                    className="w-full bg-black border border-white/5 focus:border-white/15 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white/10 transition-all font-mono"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between gap-3 pt-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTempU("78be6644-0a65-48ec-81a4-089ac65a2619");
-                    setTempE("1779283759");
-                  }}
-                  className="px-3 py-2 bg-zinc-900/40 border border-white/5 hover:border-white/10 text-zinc-400 hover:text-white rounded-xl text-[10px] font-bold transition active:scale-95 cursor-pointer"
-                >
-                  ডিফল্ট টোকেন
-                </button>
-                <button
-                  type="submit"
-                  disabled={saveSuccess}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-white text-black hover:bg-zinc-200 rounded-xl text-xs font-black tracking-wider transition active:scale-95 cursor-pointer disabled:opacity-50"
-                >
-                  {saveSuccess ? (
-                    <>
-                      <ShieldCheck className="w-4 h-4 text-green-600 shrink-0 animate-pulse" />
-                      সেভড!
-                    </>
-                  ) : (
-                    <>
-                      <Check className="w-4 h-4 shrink-0" />
-                      টোকেন সেভ করুন
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
     </div>
   );
