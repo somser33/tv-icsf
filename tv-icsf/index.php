@@ -1023,15 +1023,41 @@ if (!$is_allowed) {
       });
     });
 
-    // Keyboard Shortcuts (Arrow Left/Right to change channels)
+    // Keyboard Shortcuts (Arrow Left/Right to change channels) and anti-inspection protection
     window.addEventListener("keydown", (e) => {
+      // Allow input boxes to work
       if (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA") {
         return;
       }
+      
+      // Prevent Inspect Tool Key Shortcuts (F12, Ctrl+Shift+I, Ctrl+Shift+C, Ctrl+Shift+J, Ctrl+U, Ctrl+S)
+      if (
+        e.key === "F12" || 
+        (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "i" || e.key === "C" || e.key === "c" || e.key === "J" || e.key === "j")) ||
+        (e.ctrlKey && (e.key === "U" || e.key === "u" || e.key === "S" || e.key === "s" || e.key === "H" || e.key === "h"))
+      ) {
+        e.preventDefault();
+        return false;
+      }
+
       if (e.key === "ArrowRight") {
         playNextChannel();
       } else if (e.key === "ArrowLeft") {
         playPrevChannel();
+      }
+    });
+
+    // Disable Right-Click context menu
+    document.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      return false;
+    });
+
+    // Disable image dragging to prevent stealing links/logos directly
+    document.addEventListener("dragstart", (e) => {
+      if (e.target.nodeName === "IMG") {
+        e.preventDefault();
+        return false;
       }
     });
 
