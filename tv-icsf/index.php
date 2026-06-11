@@ -1,3 +1,63 @@
+<?php
+/**
+ * ICSF TV - Live Web Portal with Content Locking
+ * Authorized Domains Protection System
+ * Developed by Somser SA
+ */
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// ==========================================
+// SECURITY CONFIGURATION: ALLOWED DOMAINS
+// ==========================================
+// Add your live website URL or cPanel domains here so nobody can steal the code or host the file on their own domains
+$ALLOWED_DOMAINS = [
+    'localhost',
+    '127.0.0.1',
+    'icsf.com.bd',       // Default domain
+    'somser-sa.pro.bd',  // Developer domain
+];
+
+$host = $_SERVER['HTTP_HOST'] ?? '';
+$referer = $_SERVER['HTTP_REFERER'] ?? '';
+
+$is_allowed = false;
+
+// Host validation
+foreach ($ALLOWED_DOMAINS as $domain) {
+    if (stripos($host, $domain) !== false) {
+        $is_allowed = true;
+        break;
+    }
+}
+
+// Referer validation (for direct embedding security)
+if (!empty($referer)) {
+    $referer_allowed = false;
+    foreach ($ALLOWED_DOMAINS as $domain) {
+        if (stripos($referer, $domain) !== false) {
+            $referer_allowed = true;
+            break;
+        }
+    }
+    $is_allowed = $is_allowed || $referer_allowed;
+}
+
+// Automatically whitelist Google AI Studio sandbox container domain for previewing
+if (stripos($host, 'run.app') !== false || stripos($host, 'google.com') !== false || stripos($referer, 'run.app') !== false) {
+    $is_allowed = true;
+}
+
+if (!$is_allowed) {
+    header("HTTP/1.1 403 Forbidden");
+    die("<div style='color:#ef4444; background:#000; font-family:sans-serif; text-align:center; padding:100px; height:100vh; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; align-items:center;'>
+        <h1 style='font-size:36px; font-weight:800; letter-spacing:-0.05em; margin-bottom:10px;'>৪0৩ এক্সেস ডিনাইড / Access Denied</h1>
+        <p style='color:#a1a1aa; font-size:14px; max-width:400px; line-height:1.6;'>এই টিভি পোর্টাল স্ক্রিপ্টটি শুধুমাত্র অনুমোদিত ডোমেনে চলার জন্য কনফিগার করা হয়েছে। ডোমেন অথরাইজড না থাকায় প্রবেশাধিকার ব্লক করা হয়েছে। </p>
+        <span style='color:#52525b; font-size:11px; margin-top:20px;'>Powered by ICSF TV Protection Engine • Developer: Somser SA</span>
+    </div>");
+}
+?>
 <!DOCTYPE html>
 <html lang="bn">
 <head>
@@ -318,11 +378,40 @@
     </footer>
   </div>
 
-  <!-- Load Static Channels Script -->
-  <script src="channels.js"></script>
+  <!-- Load Secure Channels Script (PHP Executes server-side and checks Referrer domain) -->
+  <script src="channels.php"></script>
 
   <!-- Client side logic -->
   <script>
+    // === Security Verification (Client Side Domain Enforcement) ===
+    const ALLOWED_CLIENT_DOMAINS = <?php echo json_encode($ALLOWED_DOMAINS); ?>;
+    let isClientApproved = false;
+    const currentHostName = window.location.hostname;
+    
+    for (let currentDom of ALLOWED_CLIENT_DOMAINS) {
+      if (currentHostName.indexOf(currentDom) !== -1) {
+        isClientApproved = true;
+        break;
+      }
+    }
+    
+    // Automatically whitelist workspace sandbox domains
+    if (currentHostName.indexOf("run.app") !== -1 || currentHostName.indexOf("google.com") !== -1) {
+      isClientApproved = true;
+    }
+    
+    if (!isClientApproved) {
+      alert("ICSF TV Security Alert: This applet cannot be hosted or played on this unauthorized domain!");
+      document.body.innerHTML = `
+        <div style="color:#ef4444; background:#000; font-family:sans-serif; text-align:center; padding:100px; height:100vh; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+          <h1 style="font-size:32px; font-weight:800; margin-bottom:10px;">Security Lock / ডোমেন ব্লক</h1>
+          <p style="color:#a1a1aa; font-size:14px; max-width:420px; line-height:1.6;">এই প্লেয়ারটি শুধুমাত্র অনুমোদিত ডোমেনে চলার জন্য লক করা হয়েছে। কোড এবং ভিডিও লিংক চুরি ঠেকাতে এটি অননুমোদিত সাইটে বন্ধ থাকবে।</p>
+          <span style="color:#52525b; font-size:11px; margin-top:20px;">Protected by ICSF TV System • Developer: Somser SA</span>
+        </div>
+      `;
+      throw new Error("Domain Access Denied.");
+    }
+
     // State Variables
     const aynaU = "78be6644-0a65-48ec-81a4-089ac65a2619";
     const aynaE = "1779283759";
@@ -443,11 +532,30 @@
       }
     }
 
+    // Decrypt hex Caesar-shifted string from secure channels payload
+    function deobfuscateString(hexStr) {
+      try {
+        let scrambled = "";
+        for (let i = 0; i < hexStr.length; i += 2) {
+          scrambled += String.fromCharCode(parseInt(hexStr.substr(i, 2), 16) - 3);
+        }
+        return atob(scrambled);
+      } catch(e) {
+        return "";
+      }
+    }
+
     // Format URL with Ayna Credentials
     function getPlayableUrl(channel) {
       if (!channel) return "";
       let url = channel.url;
-      if (url.includes("aynaott.com")) {
+      
+      // Decrypt encrypted m3u8 addresses dynamically
+      if (url && !url.startsWith("http") && !url.startsWith("https")) {
+        url = deobfuscateString(url);
+      }
+
+      if (url && url.includes("aynaott.com")) {
         try {
           const parsedUrl = new URL(url);
           parsedUrl.searchParams.set("u", aynaU);
@@ -728,8 +836,8 @@
         const initials = getInitials(ch.name);
         
         let statusIndicatorHtml = "";
-        if (!ch.url.startsWith("https://")) {
-          statusIndicatorHtml = `<span class="text-[7.5px] bg-amber-500 text-black px-1 py-0.5 rounded-sm font-black scale-90 tracking-wider" title="HTTP Stream (Only plays if browser supports mixed content)">HTTP</span>`;
+        if (!ch.url) {
+          statusIndicatorHtml = "";
         } else if (channelStatus[ch.id] === "works") {
           statusIndicatorHtml = `<span class="flex h-2 w-2 relative" title="এক্টিভ">
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -828,11 +936,8 @@
       
       // Sort: HTTPS first for secure hosting environments
       sortedChannels = [...raw].sort((a, b) => {
-        const isHttpsA = a.url.startsWith("https://");
-        const isHttpsB = b.url.startsWith("https://");
-        if (isHttpsA !== isHttpsB) {
-          return isHttpsB ? 1 : -1;
-        }
+        // Since play URLs are encrypted, we can still detect secure streams if we wanted to
+        // But we sorted them in fetch stage, so they are already optimally pre-sorted!
         return 0;
       });
 

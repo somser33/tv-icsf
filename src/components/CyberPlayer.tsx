@@ -9,7 +9,8 @@ import {
   SkipBack,
   SkipForward,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  ExternalLink
 } from "lucide-react";
 import { Channel } from "../channelsData";
 
@@ -218,6 +219,44 @@ export default function CyberPlayer({ channel, onPrev, onNext, onStatusChange }:
     }
   };
 
+  const [isPipSupported, setIsPipSupported] = useState(false);
+
+  useEffect(() => {
+    setIsPipSupported(typeof document !== "undefined" && document.pictureInPictureEnabled);
+  }, []);
+
+  const handleTogglePip = async () => {
+    const video = videoRef.current;
+    if (!video) return;
+    try {
+      if (video !== document.pictureInPictureElement) {
+        if (document.pictureInPictureEnabled) {
+          await video.requestPictureInPicture();
+        }
+      } else {
+        await document.exitPictureInPicture();
+      }
+    } catch (e) {
+      console.error("React Picture-In-Picture error:", e);
+    }
+  };
+
+  // Auto PiP on tab minimization / mobile home screen backgrounding
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      const video = videoRef.current;
+      if (document.visibilityState === "hidden" && video && !video.paused) {
+        if (document.pictureInPictureEnabled && video !== document.pictureInPictureElement) {
+          video.requestPictureInPicture().catch((err) => {
+            console.log("React background auto-PiP trigger failed:", err);
+          });
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, []);
+
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -359,7 +398,7 @@ export default function CyberPlayer({ channel, onPrev, onNext, onStatusChange }:
             </span>
           </div>
 
-          {/* Action Control Items: Reload + Fullscreen */}
+          {/* Action Control Items: Reload + PiP + Fullscreen */}
           <div className="flex items-center gap-2">
             <button
               onClick={handleReload}
@@ -368,6 +407,16 @@ export default function CyberPlayer({ channel, onPrev, onNext, onStatusChange }:
             >
               <RefreshCw className="w-3.5 h-3.5" />
             </button>
+
+            {isPipSupported && (
+              <button
+                onClick={handleTogglePip}
+                className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white border border-white/5 flex items-center justify-center transition"
+                title="পিকচার-ইন-পিকচার"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+              </button>
+            )}
 
             <button
               onClick={handleToggleFullscreen}
